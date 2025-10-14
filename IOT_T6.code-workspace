@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "b1",
+			"path": "b1"
+		},
+		{
+			"name": "b2",
+			"path": "b2"
+		},
+		{
+			"name": "Blinkled",
+			"path": "Blinkled"
+		}
+	],
+	"settings": {}
+}
