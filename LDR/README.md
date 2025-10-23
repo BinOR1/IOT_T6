@@ -22,7 +22,7 @@ Các chức năng đã làm trong dự án này:
 |-------------|----------------|
 | 3.3V        | Breadboard (+) |
 | GND         | Breadboard (-) |
-| A0          | LDR PIN        |
+| GPIO34      | LDR PIN        |
 
 ## Result
 ![Kết nối LDR với Arduino](images/teleplot.png)
