@@ -263,9 +263,14 @@ Tín hiệu Vzero:
 
 | Sequence ID | Vùng địa chỉ | Chức năng |
 |-------------|--------------|-----------|
-| SEQID_3 | 0x0000 - 0xzzzz | Sequence khởi tạo |
-| SEQID_2 | 0xzzzz - 0xyyyy | Điều khiển ADC |
-| SEQID_0/1 | 0xyyyy - end | Cập nhật DAC (ping-pong buffer) |
+| SEQID_3 | SeqStartAddr → [init_end] | Sequence khởi tạo |
+| SEQID_2 | [init_end] → [adc_end] | Điều khiển ADC |
+| SEQID_0/1 | [adc_end] → MaxSeqLen | Cập nhật DAC (ping-pong buffer) |
+
+**Ghi chú:** 
+- `SeqStartAddr`: Địa chỉ bắt đầu (thường là 0x10)
+- `[init_end]`: Địa chỉ kết thúc = SeqStartAddr + InitSeqInfo.SeqLen
+- `[adc_end]`: Địa chỉ kết thúc = [init_end] + ADCSeqInfo.SeqLen
 
 #### Thứ tự thực thi:
 
@@ -449,6 +454,10 @@ static AD5940Err RampDacRegUpdate(uint32_t *pDACData)
         CurrRampCode -= DACCodePerStep;
     
     VbiasCode = VzeroCode * 64 + CurrRampCode;
+    
+    // Tạo thanh ghi DAC 32-bit:
+    // - Bit [17:12]: VzeroCode (6-bit) cho LPDAC 6-bit
+    // - Bit [11:0]:  VbiasCode (12-bit) cho LPDAC 12-bit
     *pDACData = (VzeroCode << 12) | VbiasCode;
 }
 ```
