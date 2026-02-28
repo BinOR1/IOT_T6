@@ -1,33 +1,38 @@
-function EIS_multi_C(Cdl_list, f1, fn, sigma)
-% Standard Randles circuit: Z = Rs + (Rct + Z_W) || Cdl
-% Without Rct (Rct=0), there is no RC time constant, so both the Nyquist
-% impedance plot and the complex capacitance plot show only the 45-degree
-% Warburg diffusion line with no semicircle. Adding Rct creates the RC
-% relaxation feature that produces the Nyquist-like semicircle.
+function EIS_Warburg_effect(sigma_list, Cdl, f1, fn)
+% EIS_Warburg_effect  Show how the Warburg coefficient sigma affects EIS.
 %
-% sigma (Warburg coefficient, Ohm.s^(-1/2)) controls the low-frequency
-% diffusion tail. Pass sigma=0 to disable Warburg entirely.
-% Call EIS_Warburg_effect to compare multiple sigma values side-by-side.
+%   EIS_Warburg_effect(sigma_list)
+%   EIS_Warburg_effect(sigma_list, Cdl)
+%   EIS_Warburg_effect(sigma_list, Cdl, f1, fn)
+%
+%   Plots one curve per sigma value in sigma_list on the same axes so you
+%   can directly compare the Warburg diffusion contribution.
+%   sigma = 0 means no Warburg (pure RC Randles cell).
+%
+%   Standard Randles circuit: Z = Rs + (Rct + Z_W) || Cdl
+%   where Z_W = sigma*(1-j)/sqrt(omega)  (semi-infinite Warburg)
+%
+%   Default values:  Cdl = 10e-6 F,  f1 = 0.1 Hz,  fn = 100000 Hz
 Rs  = 100;  % solution resistance (Ohm)
 Rct = 300;  % charge transfer resistance (Ohm)
 
-if nargin < 2 || isempty(f1)
-    f1 = 1;
+if nargin < 2 || isempty(Cdl)
+    Cdl = 10e-6;
 end
-if nargin < 3 || isempty(fn)
+if nargin < 3 || isempty(f1)
+    f1 = 0.1;
+end
+if nargin < 4 || isempty(fn)
     fn = 100000;
-end
-if nargin < 4 || isempty(sigma)
-    sigma = 50;  % Warburg coefficient (Ohm.s^(-1/2))
 end
 
 num_points = 1000;
 f     = logspace(log10(f1), log10(fn), num_points);
 omega = 2 * pi * f;
 
-colors = lines(numel(Cdl_list));
+colors = lines(numel(sigma_list));
 
-figure('Name', 'EIS - Multiple Cdl Values', 'NumberTitle', 'off', ...
+figure('Name', 'EIS - Warburg Effect', 'NumberTitle', 'off', ...
        'Position', [50, 50, 1400, 600]);
 
 ax_nyq = subplot(1, 2, 1);
@@ -38,12 +43,12 @@ hold(ax_C, 'on');
 
 legend_entries = {};
 
-for k = 1:numel(Cdl_list)
-    Cdl = Cdl_list(k);
+for k = 1:numel(sigma_list)
+    sigma = sigma_list(k);
 
     % Impedance components
     Z_Cdl = 1 ./ (1i * omega * Cdl);
-    Z_W   = sigma * (1 - 1i) ./ sqrt(omega);
+    Z_W   = sigma * (1 - 1i) ./ sqrt(omega);  % zero when sigma=0
 
     % Standard Randles circuit: (Rct + Z_W) in series, then || Cdl
     Z_faradaic = Rct + Z_W;
@@ -76,7 +81,7 @@ for k = 1:numel(Cdl_list)
     plot(ax_C, C_real(end), C_imag(end), 's', ...
          'Color', colors(k,:), 'MarkerFaceColor', colors(k,:), 'MarkerSize', 7);
 
-    legend_entries{end+1} = cdl_label(Cdl); %#ok<AGROW>
+    legend_entries{end+1} = sigma_label(sigma); %#ok<AGROW>
 end
 
 % Nyquist axes
@@ -99,15 +104,24 @@ title(ax_C, 'Complex Capacitance', 'FontSize', 15, 'FontWeight', 'bold');
 legend(ax_C, legend_entries, 'Location', 'best', 'FontSize', 11);
 set(ax_C, 'FontSize', 11);
 
-sgtitle('EIS Analysis', 'FontSize', 16, 'FontWeight', 'bold');
+sgtitle(sprintf('Warburg Effect on EIS  [Rs=%g\\Omega, Rct=%g\\Omega, Cdl=%s]', ...
+        Rs, Rct, cdl_label(Cdl)), 'FontSize', 14, 'FontWeight', 'bold');
+end
+
+function lbl = sigma_label(sigma)
+if sigma == 0
+    lbl = '\sigma = 0 (no Warburg)';
+else
+    lbl = sprintf('\\sigma = %g \\Omega\\cdot s^{-1/2}', sigma);
+end
 end
 
 function lbl = cdl_label(Cdl)
 if Cdl >= 1e-3
-    lbl = sprintf('Cdl = %.3g F',  Cdl);
+    lbl = sprintf('%.3g F',  Cdl);
 elseif Cdl >= 1e-6
-    lbl = sprintf('Cdl = %.3g \muF', Cdl * 1e6);
+    lbl = sprintf('%.3g \muF', Cdl * 1e6);
 else
-    lbl = sprintf('Cdl = %.3g nF', Cdl * 1e9);
+    lbl = sprintf('%.3g nF', Cdl * 1e9);
 end
 end
