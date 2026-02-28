@@ -1,7 +1,12 @@
 function EIS_multi_C(Cdl_list, f1, fn)
-Rs    = 100;
-% Rct = 0
-sigma = 500; %(Ohm.s^(-1/2))
+% Standard Randles circuit: Z = Rs + (Rct + Z_W) || Cdl
+% Without Rct (Rct=0), there is no RC time constant, so both the Nyquist
+% impedance plot and the complex capacitance plot show only the 45-degree
+% Warburg diffusion line with no semicircle. Adding Rct creates the RC
+% relaxation feature that produces the Nyquist-like semicircle.
+Rs    = 100;  % solution resistance (Ohm)
+Rct   = 300;  % charge transfer resistance (Ohm) – set to 0 to remove
+sigma = 50;   % Warburg coefficient (Ohm.s^(-1/2)) – reduce to emphasize RC arc
 
 if nargin < 2 || isempty(f1)
     f1 = 1;
@@ -34,8 +39,9 @@ for k = 1:numel(Cdl_list)
     Z_Cdl = 1 ./ (1i * omega * Cdl);
     Z_W   = sigma * (1 - 1i) ./ sqrt(omega);
 
-    % Total impedance
-    Z_parallel = (Z_W .* Z_Cdl) ./ (Z_W + Z_Cdl);
+    % Standard Randles circuit: (Rct + Z_W) in series, then || Cdl
+    Z_faradaic = Rct + Z_W;
+    Z_parallel = (Z_faradaic .* Z_Cdl) ./ (Z_faradaic + Z_Cdl);
     Z_total    = Rs + Z_parallel;
 
     % |Z|^2 (magnitude squared)
@@ -50,9 +56,19 @@ for k = 1:numel(Cdl_list)
     % --- Nyquist plot ---
     plot(ax_nyq, real(Z_total), -imag(Z_total), '-', ...
          'Color', colors(k,:), 'LineWidth', 2);
+    % High-frequency start (circle) and low-frequency end (square)
+    plot(ax_nyq, real(Z_total(1)),   -imag(Z_total(1)),   'o', ...
+         'Color', colors(k,:), 'MarkerFaceColor', colors(k,:), 'MarkerSize', 7);
+    plot(ax_nyq, real(Z_total(end)), -imag(Z_total(end)), 's', ...
+         'Color', colors(k,:), 'MarkerFaceColor', colors(k,:), 'MarkerSize', 7);
 
     % --- Complex capacitance plot (C' vs C'') ---
     plot(ax_C, C_real, C_imag, '-', 'Color', colors(k,:), 'LineWidth', 2);
+    % High-frequency start (circle) and low-frequency end (square)
+    plot(ax_C, C_real(1),   C_imag(1),   'o', ...
+         'Color', colors(k,:), 'MarkerFaceColor', colors(k,:), 'MarkerSize', 7);
+    plot(ax_C, C_real(end), C_imag(end), 's', ...
+         'Color', colors(k,:), 'MarkerFaceColor', colors(k,:), 'MarkerSize', 7);
 
     legend_entries{end+1} = cdl_label(Cdl); %#ok<AGROW>
 end
